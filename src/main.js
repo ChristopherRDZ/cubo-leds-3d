@@ -282,7 +282,7 @@ function chip(c0, name, sub) {
 }
 // ---- DIP switch de 3
 const levers = [];
-function dipSwitch() {
+function dipSwitch(show) {
   const g = new THREE.Group(); const xm = cx(6);
   const body = new THREE.Mesh(new RoundedBoxGeometry(5.3, 0.7, 2.15, 3, 0.08), plastic('#c62828', 0.45)); body.position.set(xm, 0.62, 0); g.add(body);
   const top = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 2.05), new THREE.MeshStandardMaterial({ map: canvasTex(520, 205, (c, w, h) => { c.fillStyle = '#c62828'; c.fillRect(0, 0, w, h); c.fillStyle = '#fff'; c.font = 'bold 26px Arial'; c.textAlign = 'left'; c.fillText('ON', 10, 28); c.textAlign = 'center'; c.font = 'bold 24px Arial'; [0, 1, 2, 3, 4].forEach(i => { c.fillStyle = i < 3 ? '#fff' : '#f2a8a8'; c.fillText(String(i + 1), (i + 0.5) / 5.2 * w + 5, h - 10); }); }), roughness: 0.5 }));
@@ -290,7 +290,7 @@ function dipSwitch() {
   for (let i = 0; i < 5; i++) {
     const x = cx(4 + i);
     const slot = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.06, 1.3), plastic('#f3e5e3')); slot.position.set(x, 0.99, 0); slot.userData.noGlow = true; g.add(slot);
-    const lv = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.34, 0.55, 2, 0.06), plastic('#f7f7f7', 0.35)); lv.position.set(x, 1.15, 0.32); lv.userData.sw = i; lv.userData.noGlow = true; g.add(lv); levers.push(lv);
+    const lv = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.34, 0.55, 2, 0.06), plastic('#f7f7f7', 0.35)); lv.position.set(x, 1.15, 0.32); if (!show) { lv.userData.sw = i; levers.push(lv); } lv.userData.noGlow = true; g.add(lv);
   }
   const legM = metal(); const vt = new THREE.BoxGeometry(0.2, 0.75, 0.07);
   for (let i = 0; i < 5; i++) for (const s of [-1, 1]) { const v1 = new THREE.Mesh(vt, legM); v1.position.set(cx(4 + i), 0.12, s * 1.25); g.add(v1); }
@@ -418,30 +418,138 @@ addEl(16, ledCube(), { tip: '<b>El cubo</b>: ARRIBA (P1, P2), ABAJO (P3, P4) y L
 for (let k = 1; k <= 6; k++) { const c = 47 - k, x = cx(c); W(16, 'j' + c, cubeEntry(k), COL.P[k], { pts: [V(x, 1.5, 7.2), V(x + 0.2, 0.9, 10.6), V(cubeEntry(k).x, 0.2, 13.5)] }, `Cable <b>P${k}</b> → patas cortas del grupo P${k}`, ['P' + k], [`j${c} → P${k}`]); }
 W(16, 'bp50', cubeEntry(0), COL.red, { pts: [V(cx(50), 1.3, 9.6), V(cx(50) - 0.5, 0.6, 12.2), V(cubeEntry(0).x, 0.2, 13.8)] }, '<b>+ común</b> → patas largas de TODOS los LEDs', ['VCC'], ['bp50 → + común']);
 
-for (const e of EL) { if (e.step > 4) e.step -= 2; else if (e.step > 2) e.step -= 1; }
-// ============================================================ pasos
+for (const e of EL) { if (e.step > 4) e.step -= 2; else if (e.step > 2) e.step -= 1; e.step += 2; }
+
+// ---- paso 1: cómo está conectada la protoboard (solo se ve en ese paso)
+{
+  const g = new THREE.Group();
+  const glow = (x, z, w, d, col) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, 0.06, d), new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.6, transparent: true, opacity: 0.55, depthWrite: false })); m.position.set(x, 0.05, z); m.userData.noGlow = true; g.add(m); return m; };
+  glow(cx(8), (ROWZ.a + ROWZ.e) / 2, 0.8, 4.9, '#2fcf72');
+  glow(cx(8), (ROWZ.f + ROWZ.j) / 2, 0.8, 4.9, '#2f8fff');
+  glow(cx(13), (ROWZ.a + ROWZ.e) / 2, 0.8, 4.9, '#2fcf72');
+  glow(0, ROWZ.tp, 60.6, 0.7, '#ff5a4f');
+  glow(0, ROWZ.tn, 60.6, 0.7, '#4f8cff');
+  addEl(1, g, { only: true, tip: 'Las zonas de color muestran qué huecos están unidos por dentro.', labels: [
+    { p: V(cx(8), 0.6, ROWZ.a - 0.4), t: 'columna 8: a–e unidos' },
+    { p: V(cx(8), 0.6, ROWZ.j + 0.5), t: 'f–j unidos (aparte)' },
+    { p: V(cx(13), 0.6, ROWZ.a - 0.4), t: 'otra columna: otro grupo' },
+    { p: V(cx(15), 0.6, ROWZ.tp), t: 'riel +: todo unido →' },
+    { p: V(cx(15), 0.6, ROWZ.tn + 0.3), t: 'riel −: todo unido →' },
+    { p: V(cx(4), 0.6, 0), t: 'canal: separa arriba y abajo' },
+    { p: V(cx(1) - 1.35, 0.6, ROWZ.a), t: 'fila a arriba' },
+    { p: V(cx(3), 0.6, 6.2), t: '← columna 1' }
+  ] });
+}
+// ---- paso 2: las piezas sobre la mesa (solo se ven en ese paso)
+function showcase(obj, x, z, scale = 1) {
+  const g = new THREE.Group(); g.add(obj); obj.updateMatrixWorld(true);
+  const b = new THREE.Box3().setFromObject(obj), c = b.getCenter(new THREE.Vector3());
+  obj.position.sub(V(c.x, b.min.y + 0.25, c.z)); g.scale.setScalar(scale); g.position.set(x, 0, z); return g;
+}
+const SHOW = [
+  [chip(10, 'PIC16F628A', 'muesca = media luna'), -26, 15, 1, 'PIC16F628A · 18 patas', '<b>PIC16F628A</b>: el «cerebro». Tiene 18 patas y una media luna (muesca) en un extremo.'],
+  [chip(30, 'ULN2803', 'muesca = media luna'), -11, 15, 1, 'ULN2803 · 18 patas', '<b>ULN2803</b>: el que da la fuerza para prender los LEDs. También 18 patas y muesca.'],
+  [dipSwitch(true), 2, 15, 1.4, 'DIP switch de 5', '<b>DIP switch</b>: 5 interruptores pequeñitos. Se mueven con la uña o una punta.'],
+  [crystal('c12', 'c13'), -29, 22, 1.6, 'cristal 4 MHz', '<b>Cristal</b>: pieza metálica plateada con 2 patas. Dice 4.000 o 4MHz.'],
+  [ceramic('a12', 'tn12'), -23, 22, 1.6, '2 × 22 pF («22»)', '<b>Condensadores de 22 pF</b>: lentejitas color naranja o café con el número «22». Necesitan 2.'],
+  [resistor('d41', 'g41', '10k', { elev: 0.75 }), -12, 22, 1.5, '3 × 10 kΩ', '<b>Resistencias de 10 kΩ</b> (necesitan 3): bandas <b>café · negro · naranja</b> · dorado.'],
+  [resistor('d41', 'g41', '33', { elev: 0.75 }), -2, 22, 1.5, '6 × 33 Ω', '<b>Resistencias de 33 Ω</b> (necesitan 6): bandas <b>naranja · naranja · negro</b> · dorado.'],
+  [ledModel('#ffd23a'), 6.5, 22, 2.2, 'LED: pata larga = +', '<b>LED</b>: la pata <b>larga</b> va al + y la <b>corta</b> (lado plano del borde) al −. Al revés no prende.'],
+  [wire('a1', 'a5', COL.P[4], { h: 2 }), -20, 28, 1.3, 'cables (jumpers)', '<b>Cables jumper</b>: de varios colores. El color no cambia nada, solo ayuda a no confundirse.']
+];
+SHOW.forEach(([o, x, z, sc, lab, tip]) => addEl(2, showcase(o, x, z, sc), { only: true, tip, labels: [{ p: V(x, 2.2 * sc, z - 1.4), t: lab }] }));
+
+// ============================================================ pasos  [título, explicación, comprobación]
 const STEPS = [
-  ['Fuente y rieles', 'Cable <b>rojo</b> del + de la fuente al riel rojo de arriba y cable <b>negro</b> del − al riel azul de arriba. En el extremo derecho, unan los rieles de arriba con los de abajo: rojo con rojo, azul con azul.<br><br>Los cables <b>transparentes</b> solo hacen falta si la línea roja o azul de su protoboard se corta a la mitad (rieles partidos).'],
-  ['PIC16F628A', 'Cruzando el canal central, con la <b>muesca a la izquierda</b>. Pata 1 en <code>f10</code>, pata 9 en <code>f18</code>, pata 10 en <code>e18</code> y pata 18 en <code>e10</code>.'],
-  ['Alimentación del PIC y MCLR', 'Cable rojo de <code>a14</code> (pata 14) al riel + de arriba. Cable negro de <code>j14</code> (pata 5) al riel − de abajo. Y la <b>pata 4 (MCLR)</b> directo al +: cable rojo de <code>j13</code> al riel + de abajo, como en su esquema. Si la pata 4 queda al aire, el PIC se reinicia solo.'],
-  ['Cristal de 4 MHz', 'Cristal en <code>c12</code> y <code>c13</code> (patas 16 y 15). Un condensador de <b>22 pF</b> de <code>a12</code> al riel − y otro de <code>a13</code> al riel −. Sin cristal el PIC no arranca.'],
-  ['ULN2803', 'Cruzando el canal, con la <b>muesca a la izquierda</b>. Pata 1 en <code>f30</code>, pata 9 en <code>f38</code>, pata 10 en <code>e38</code> y pata 18 en <code>e30</code>.'],
-  ['Alimentación del ULN', '<b>Pata 9 (GND)</b>: <code>j38</code> al riel −; sin esto nunca prende nada. <b>Pata 10 (COM)</b>: <code>a38</code> al riel +. Las patas 7 y 8 no se usan y quedan libres.'],
-  ['Del PIC al ULN (6 cables)', '<code>g15→g30</code> (RB0), <code>h16→h31</code> (RB1), <code>i17→i32</code> (RB2), <code>j18→j33</code> (RB3).<br>RB4 y RB5 salen de la fila de <b>arriba</b> del PIC: <code>c18→h34</code> y <code>d17→i35</code>.'],
-  ['DIP switch de 5', 'Cruzando el canal en las columnas <b>4 a 8</b>, con el switch 1 a la izquierda y el lado «ON» hacia arriba. El programa solo lee los switches <b>1, 2 y 3</b> (columnas 4, 5 y 6). El <b>4 y el 5</b> (columnas 7 y 8) se quedan <b>sin ningún cable</b>; déjenlos en OFF.'],
-  ['DIP: lado de abajo al +', 'Tres cables rojos de <code>j4</code>, <code>j5</code> y <code>j6</code> al riel + de abajo.'],
-  ['Resistencias de 10 kΩ a GND', 'De <code>a4</code>, <code>a5</code> y <code>a6</code> al riel − de arriba. <b>Muy importantes</b>: sin ellas el PIC lee mal los switches y se queda en «todo encendido».'],
-  ['Del DIP al PIC', 'Switch 1: <code>b4→b11</code> (pata 17, RA0). Switch 2: <code>c5→c10</code> (pata 18, RA1). Switch 3: <code>d6→g10</code> (pata 1, RA2, en la fila de abajo).'],
-  ['Salidas del ULN', 'Seis cables de la fila de arriba del ULN a la zona de resistencias: <code>a30→a46</code> (P1), <code>a31→a45</code> (P2), <code>a32→a44</code> (P3), <code>a33→a43</code> (P4), <code>a34→a42</code> (P5) y <code>a35→a41</code> (P6).'],
-  ['Resistencias de 33 Ω', 'Seis resistencias (naranja-naranja-negro), cada una cruzando el canal: <code>d41→g41</code> … <code>d46→g46</code>. Si usan la red RN1 de 16 patas, cada par enfrentado (1–16, 2–15…) es una resistencia.'],
-  ['Cables al cubo', 'Cable rojo del riel + de abajo (<code>bp50</code>) al <b>+ común</b> del cubo. Desde la fila j: <code>j46</code> = P1, <code>j45</code> = P2, <code>j44</code> = P3, <code>j43</code> = P4, <code>j42</code> = P5 y <code>j41</code> = P6.'],
-  ['El cubo', 'En cada grupo, <b>todas las patas largas al + común</b> y <b>todas las patas cortas juntas a su cable P</b>. Miren cómo se encienden los grupos uno por uno. Si un LED no prende y los demás de su grupo sí, ese LED está al revés.'],
-  ['El programa', 'En <b>CUBO.c</b> cambien<br><code>#pragma config BOREN = ON</code><br>por<br><code>#pragma config BOREN = OFF</code><br>Compilen y graben otra vez el PIC. Con 4,5 V, la protección de bajo voltaje puede reiniciar el PIC cada vez que se prenden todos los LEDs, y entonces nunca llega a la secuencia.<br><br>Listo: pasen a <b>Probar</b> para ver qué debe hacer cada posición del DIP.']
+  ['Antes de empezar: la protoboard', 'La protoboard sirve para conectar piezas <b>sin soldar</b>. Por dentro tiene tiras de metal:<br>• Los <b>5 huecos de una columna</b> de arriba (filas a–e) están unidos entre sí (verde).<br>• Los 5 de abajo (f–j) también, pero <b>separados</b> de los de arriba por el canal del centro (azul).<br>• Los <b>rieles</b> de los bordes están unidos de lado a lado: rojo = +, azul = −.<br><br><b>Muy importante:</b> pongan su protoboard igual que en la pantalla, con la fila <b>a arriba</b> y la columna <b>1 a la izquierda</b>. Si en la suya la <b>j</b> queda arriba, denle media vuelta. Si no, todo queda corrido y no funciona.',
+    'Su protoboard está acostada igual que la de la pantalla: la letra «a» arriba y el número «1» a la izquierda.'],
+  ['Lo que necesitan', 'Separen estas piezas en la mesa antes de empezar. Toquen cada una en la pantalla para ver cómo reconocerla.<br>• 1 PIC16F628A y 1 ULN2803 (los dos chips negros de 18 patas)<br>• 1 DIP switch de 5<br>• 1 cristal de 4 MHz y 2 condensadores de 22 pF<br>• 3 resistencias de 10 kΩ (café-negro-naranja)<br>• 6 resistencias de 33 Ω (naranja-naranja-negro)<br>• Cables, la fuente de 4,5 V y su cubo de LEDs ya armado',
+    'Tienen todas las piezas y la fuente está <b>apagada y desconectada</b>. No la prendan hasta el último paso.'],
+  ['Fuente y rieles', 'Primero llevamos la energía a los rieles. Con la fuente <b>apagada</b>:<br>• Cable <b>rojo</b> del + de la fuente al riel rojo de arriba.<br>• Cable <b>negro</b> del − al riel azul de arriba.<br>• En el extremo derecho, unan los rieles de arriba con los de abajo: rojo con rojo, azul con azul. Así llega la energía a los cuatro rieles.<br><br>Los cables <b>transparentes</b> solo hacen falta si la línea roja o azul de su protoboard se corta a la mitad (algunas tienen los rieles partidos).',
+    'Solo hay cables en los rieles; nada en la parte del centro todavía.'],
+  ['El PIC16F628A', 'Busquen la <b>muesca</b>: una media luna en un extremo del chip; a veces también hay un puntito. Pónganlo con la muesca a la <b>izquierda</b>, cruzando el canal del centro: una fila de patas en la fila <b>e</b> y la otra en la <b>f</b>, de la columna 10 a la 18.<br><br>Las patas se cuentan así: la <b>pata 1</b> es la de abajo a la izquierda (<code>f10</code>); de ahí se cuenta hacia la derecha hasta la 9 (<code>f18</code>), y se regresa por arriba de derecha a izquierda: 10 (<code>e18</code>) … 18 (<code>e10</code>).',
+    'La media luna queda a la izquierda y las 18 patas entraron completas, ninguna doblada por debajo.'],
+  ['Energía para el PIC', 'El PIC necesita + y − para funcionar:<br>• Cable rojo de <code>a14</code> (pata 14) al riel + de arriba.<br>• Cable negro de <code>j14</code> (pata 5) al riel − de abajo.<br>• Cable rojo de <code>j13</code> (pata 4, MCLR) al riel + de abajo. Esta pata tiene que estar en + o el PIC se reinicia solo.',
+    'Hay 3 cables nuevos: a14 → riel + de arriba, j14 → riel − de abajo y j13 → riel + de abajo.'],
+  ['El cristal (reloj del PIC)', 'El cristal le marca el ritmo al PIC; sin él no arranca.<br>• Cristal en <code>c12</code> y <code>c13</code>. No importa hacia dónde vea.<br>• Un condensador de 22 pF de <code>a12</code> al riel − de arriba.<br>• Otro de 22 pF de <code>a13</code> al riel − de arriba.',
+    'El cristal está en las columnas 12 y 13, y cada condensador va de su columna al riel azul.'],
+  ['El ULN2803', 'Igual que el PIC: <b>muesca a la izquierda</b>, cruzando el canal, de la columna 30 a la 38. Pata 1 en <code>f30</code>, pata 9 en <code>f38</code>, pata 10 en <code>e38</code> y pata 18 en <code>e30</code>.',
+    'La media luna a la izquierda y las 18 patas bien metidas.'],
+  ['Energía para el ULN', '• Cable negro de <code>j38</code> (pata 9) al riel − de abajo. <b>Sin este cable nunca prende nada.</b><br>• Cable rojo de <code>a38</code> (pata 10) al riel + de arriba.<br>Las patas 7 y 8 no se usan: quedan libres.',
+    'j38 va al riel azul de abajo y a38 al riel rojo de arriba.'],
+  ['Del PIC al ULN (6 cables)', 'Estos cables llevan las órdenes del PIC al ULN. Usen colores distintos, como en la pantalla, para no confundirse:<br>• <code>g15</code> → <code>g30</code><br>• <code>h16</code> → <code>h31</code><br>• <code>i17</code> → <code>i32</code><br>• <code>j18</code> → <code>j33</code><br>• <code>c18</code> → <code>h34</code> (sale de arriba del PIC)<br>• <code>d17</code> → <code>i35</code> (sale de arriba del PIC)',
+    'Hay 6 cables entre el PIC y el ULN, y ningún hueco tiene dos cables.'],
+  ['El DIP switch', 'Pónganlo cruzando el canal en las columnas <b>4 a 8</b>, con el número 1 a la izquierda y la palabra <b>ON hacia arriba</b>.<br>El programa solo usa los switches <b>1, 2 y 3</b>. El 4 y el 5 se quedan <b>sin cables</b> y en OFF.',
+    'El switch 1 queda en la columna 4 y la palabra ON hacia arriba.'],
+  ['DIP: lado de abajo al +', 'Tres cables rojos, uno por switch:<br>• <code>j4</code> → riel + de abajo<br>• <code>j5</code> → riel + de abajo<br>• <code>j6</code> → riel + de abajo',
+    'Los tres cables van de la fila j al riel rojo de abajo.'],
+  ['Resistencias de 10 kΩ', 'Una resistencia por switch, de arriba al riel azul (−). Son las de bandas <b>café-negro-naranja</b> y no tienen lado:<br>• <code>a4</code> → riel − de arriba<br>• <code>a5</code> → riel − de arriba<br>• <code>a6</code> → riel − de arriba<br>Sirven para que el PIC lea «apagado» cuando el switch está en OFF. <b>Sin ellas no cambian las secuencias.</b>',
+    'Son las de café-negro-naranja y van de a4, a5 y a6 al riel azul.'],
+  ['Del DIP al PIC (3 cables)', 'Estos cables le dicen al PIC cómo están los switches:<br>• Switch 1: <code>b4</code> → <code>b11</code> (pata 17)<br>• Switch 2: <code>c5</code> → <code>c10</code> (pata 18)<br>• Switch 3: <code>d6</code> → <code>g10</code> (pata 1; ojo: va a la fila de <b>abajo</b>)',
+    'El tercer cable termina abajo, en g10, no arriba.'],
+  ['Salidas del ULN (6 cables)', 'De la fila de arriba del ULN a la zona de las resistencias. Fíjense que se «abren» como un arcoíris:<br>• <code>a30</code> → <code>a46</code><br>• <code>a31</code> → <code>a45</code><br>• <code>a32</code> → <code>a44</code><br>• <code>a33</code> → <code>a43</code><br>• <code>a34</code> → <code>a42</code><br>• <code>a35</code> → <code>a41</code>',
+    'El cable de a30 va a la columna más lejana (46) y el de a35 a la más cercana (41).'],
+  ['Resistencias de 33 Ω', 'Seis resistencias de bandas <b>naranja-naranja-negro</b>, cada una cruzando el canal en su columna:<br><code>d41→g41</code>, <code>d42→g42</code>, <code>d43→g43</code>, <code>d44→g44</code>, <code>d45→g45</code>, <code>d46→g46</code>.<br>Si usan la red de resistencias de 16 patas (RN1), cada par de patas enfrentadas es una resistencia y hace lo mismo.',
+    'Hay una resistencia en cada columna de la 41 a la 46, cruzando el canal.'],
+  ['Cables al cubo', '• Cable rojo del riel + de abajo (<code>bp50</code>) al <b>+ común</b> del cubo (donde se juntan todas las patas largas).<br>• De la fila j, un cable por grupo: <code>j46</code> = P1, <code>j45</code> = P2, <code>j44</code> = P3, <code>j43</code> = P4, <code>j42</code> = P5, <code>j41</code> = P6.',
+    'Salen 7 cables al cubo: 1 rojo (+ común) y 6 de los grupos.'],
+  ['El cubo', 'Así deben estar los LEDs: en cada grupo, <b>todas las patas largas al + común</b> y <b>todas las patas cortas juntas a su cable P</b>. Miren cómo se enciende cada grupo.<br>Si un LED no prende y los demás de su grupo sí, ese LED está al revés: denle la vuelta.',
+    'Cada grupo de LEDs tiene su propio cable P y ningún LED está al revés.'],
+  ['Grabar el programa (1 de 2)', 'Primero cambiamos una línea del programa, en la computadora:<br>1. Abran <b>MPLAB X</b> y el proyecto <b>Proyecto Final-5.X</b>.<br>2. Abran el archivo <b>CUBO.c</b>.<br>3. Busquen <code>#pragma config BOREN = ON</code> y cambien <b>ON</b> por <b>OFF</b>.<br>4. Guarden con <b>Ctrl + S</b>.<br>5. Den clic en el botón del <b>martillo con escoba</b> («Clean and Build»).<br><br>¿Por qué? Con 4,5 V la opción BOREN puede reiniciar el PIC cada vez que se prenden todos los LEDs.',
+    'Abajo, en la ventana «Output», dice <b>BUILD SUCCESSFUL</b>.'],
+  ['Grabar el programa (2 de 2)', '<b>Saquen el PIC de la protoboard para grabarlo.</b> En su circuito la pata 4 va directo al +, y al grabar el programador pone unos 13 V en esa pata: si lo graban puesto, pueden dañar el PIC o la fuente.<br>1. Pongan el PIC en su programador (por ejemplo un PICkit con su adaptador), con la muesca como indica el adaptador.<br>2. Abran <b>MPLAB X IPE</b>. En «Device» escriban <b>PIC16F628A</b> y den clic en <b>Apply</b> y luego en <b>Connect</b>.<br>3. En «Source», con <b>Browse</b>, elijan el archivo <code>Proyecto_Final-5.X.production.hex</code>, que está en la carpeta <code>dist/default/production</code> del proyecto.<br>4. Den clic en <b>Program</b>.<br>5. Regresen el PIC a la protoboard, con la muesca a la izquierda y la pata 1 en f10.<br><br>Si usan otro programador (K150 u otro), el programa para grabar cambia: díganme cuál es.',
+    'El IPE dice <b>Programming/Verify complete</b> y el PIC volvió a su lugar con la muesca a la izquierda.'],
+  ['¡A prenderlo!', 'Repasen que no haya cables sueltos ni patas dobladas. Ahora sí, <b>prendan la fuente</b>.<br>• Con los 3 switches en OFF, todo el cubo se prende fijo.<br>• Switch 1 en ON: parpadean los de abajo.<br>• Los 3 en ON: los grupos se prenden <b>de uno en uno</b>.<br>Prueben aquí tocando los switches de la pantalla. En «Probar» está la lista completa.<br><br><b>Si algo no funciona</b>, apaguen y revisen en este orden: 1) la orientación de la protoboard (paso 1), 2) las muescas de los chips, 3) el cable de j38, 4) las resistencias de 10 kΩ, 5) que el PIC se grabó bien.',
+    'Al mover los switches cambia lo que hace el cubo.']
 ];
 const FOCUS = {
-  15: () => new THREE.Box3().setFromCenterAndSize(V(CUBE.x, CUBE.y0 + 3.5, CUBE.z), V(12, 10, 12)),
-  16: () => new THREE.Box3().setFromCenterAndSize(V(cx(14), 0.5, -1), V(14, 2, 12))
+  1: () => new THREE.Box3().setFromCenterAndSize(V(-18.5, 0, -1.5), V(27, 2, 17)),
+  2: () => new THREE.Box3().setFromCenterAndSize(V(-12, 1, 22), V(42, 3, 18)),
+  17: () => new THREE.Box3().setFromCenterAndSize(V(CUBE.x, CUBE.y0 + 3.5, CUBE.z), V(12, 10, 12)),
+  18: () => new THREE.Box3().setFromCenterAndSize(V(cx(14), 0.5, -1), V(14, 2, 12)),
+  19: () => new THREE.Box3().setFromCenterAndSize(V(cx(14), 0.5, -1), V(14, 2, 12)),
+  20: () => new THREE.Box3().setFromCenterAndSize(V(-4, 1, 10), V(50, 8, 32))
 };
+const LIVE = 20, CUBESTEP = 17;
+
+// ---- glosario: palabras que se pueden tocar
+const TERMS = {
+  'protoboard': 'Tablero con huecos para conectar piezas sin soldar. Por dentro tiene tiras de metal que unen ciertos huecos.',
+  'riel': 'Las líneas largas de huecos en los bordes. Todos los huecos de un riel están unidos. Rojo = +, azul = −.',
+  'rieles': 'Las líneas largas de huecos en los bordes. Todos los huecos de un riel están unidos. Rojo = +, azul = −.',
+  'canal': 'La ranura del centro de la protoboard. Separa los huecos de arriba (a–e) de los de abajo (f–j).',
+  'muesca': 'La media luna en un extremo del chip. Marca dónde está la pata 1.',
+  'MCLR': 'La pata 4 del PIC. Tiene que estar conectada al +; si queda al aire, el PIC se reinicia solo.',
+  'PIC': 'El microcontrolador: el «cerebro» del circuito, donde vive el programa.',
+  'ULN': 'Chip que da la fuerza para prender los LEDs. El PIC le dice qué grupo prender.',
+  'cristal': 'Pieza metálica que le marca el ritmo (el reloj) al PIC.',
+  'DIP switch': 'Fila de interruptores pequeñitos. Se mueven con la uña o con una punta.',
+  'resistencia': 'Pieza que limita la corriente. Su valor se lee con las bandas de colores.',
+  'resistencias': 'Piezas que limitan la corriente. Su valor se lee con las bandas de colores.',
+  'condensador': 'Pieza que guarda un poquito de energía. Los de 22 pF son lentejitas con el número «22».',
+  'BOREN': 'Opción del programa que reinicia el PIC si el voltaje baja de unos 4 V. Con 4,5 V conviene apagarla.',
+  'MPLAB X IPE': 'Programa de Microchip para grabar el archivo .hex en el PIC con el programador.',
+  'MPLAB X': 'Programa de Microchip para escribir y compilar el código del PIC.',
+  'programador': 'Aparato que se conecta a la computadora y graba el programa dentro del PIC (por ejemplo, un PICkit).',
+  '+ común': 'El cable donde se juntan todas las patas largas de los LEDs.',
+  'patas largas': 'En un LED, la pata larga es el + (ánodo).',
+  'patas cortas': 'En un LED, la pata corta es el − (cátodo). Del lado de la pata corta, el borde del LED es plano.'
+};
+const TERM_KEYS = Object.keys(TERMS).sort((a, b) => b.length - a.length);
+const TERM_RE = new RegExp('(^|[^A-Za-zÁÉÍÓÚáéíóúÑñ0-9])(' + TERM_KEYS.map(t => t.replace(/[+]/g, '\\+')).join('|') + ')(?![A-Za-zÁÉÍÓÚáéíóúÑñ0-9])', 'gi');
+function glossify(html) {
+  const used = new Set(); let inCode = 0;
+  return html.split(/(<[^>]+>)/).map(part => {
+    if (part.startsWith('<')) { if (/^<code/i.test(part)) inCode++; else if (/^<\/code/i.test(part)) inCode--; return part; }
+    if (inCode) return part;
+    return part.replace(TERM_RE, (m, pre, word) => {
+      const key = TERM_KEYS.find(k => k.toLowerCase() === word.toLowerCase());
+      if (!key || used.has(key)) return m; used.add(key);
+      return `${pre}<span class="term" data-k="${key}">${word}</span>`;
+    });
+  }).join('');
+}
+$('sheet').addEventListener('click', ev => { const t = ev.target.closest('.term'); if (t) toast(`<b>${t.dataset.k}</b>: ${TERMS[t.dataset.k]}`); });
 
 // ============================================================ estado de la vista
 let mode = 'M', cur = 1, showAll = false, stepStart = 0;
@@ -469,7 +577,7 @@ function overview() { const b = new THREE.Box3(); EL.forEach(e => { if (e.obj.vi
 function applyVisibility() {
   const all = showAll || mode === 'P';
   EL.forEach(e => {
-    const vis = all || e.step <= cur;
+    const vis = e.only ? (!all && e.step === cur) : (all || e.step <= cur);
     if (vis && !e.obj.visible && !all && e.step === cur) { e.obj.position.y = 7; anim.push({ e, t0: performance.now() + 90 * anim.length }); }
     e.obj.visible = vis;
     if (all || e.step < cur) { e.obj.position.y = 0; }
@@ -480,13 +588,13 @@ function render() {
   applyVisibility();
   $('sn').textContent = showAll ? 'Montaje completo' : `Paso ${cur} de ${STEPS.length}`;
   $('st').textContent = showAll ? 'Así queda todo' : STEPS[cur - 1][0];
-  $('sx').innerHTML = showAll ? 'Giren la vista con el dedo y toquen cualquier pieza o hueco para ver a qué va conectado. En «Probar» pueden mover el DIP y ver el cubo funcionando.' : STEPS[cur - 1][1];
+  $('sx').innerHTML = showAll ? 'Giren la vista con el dedo y toquen cualquier pieza o hueco para ver a qué va conectado. En «Probar» pueden mover el DIP y ver el cubo funcionando.' : glossify(STEPS[cur - 1][1]) + (STEPS[cur - 1][2] ? `<div class="check"><span>✔</span><div><b>Comprueben:</b> ${STEPS[cur - 1][2]}</div></div>` : '');
   $('prev').disabled = !showAll && cur === 1;
   $('next').textContent = !showAll && cur === STEPS.length ? 'Ver todo ▶' : (showAll ? 'Empezar ▶' : 'Siguiente ▶');
   $('all').classList.toggle('on', showAll);
   [...$('dots').children].forEach((d, i) => { d.className = showAll ? 'done' : i + 1 === cur ? 'cur' : i + 1 < cur ? 'done' : ''; });
   stepStart = performance.now();
-  if (mode === 'P') frame(new THREE.Box3().setFromCenterAndSize(V(-4, 1, 10), V(50, 8, 32)));
+  if (mode === 'P' || (cur === LIVE && !showAll)) frame(new THREE.Box3().setFromCenterAndSize(V(-4, 1, 10), V(50, 8, 32)));
   else if (showAll) frame(overview());
   else frame(FOCUS[cur] ? FOCUS[cur]() : (cur === 1 ? overview() : boxOf(elsOf(cur))));
   buildLabels();
@@ -509,7 +617,9 @@ function buildLabels() {
   labelsEl.innerHTML = ''; LABS = [];
   if (mode === 'P') { [0, 1, 2].forEach(i => { const d = addLab(V(cx(4 + i), 1.7, 0), `switch ${i + 1}`, '#ffffff'); d.style.pointerEvents = 'auto'; d.style.cursor = 'pointer'; d.onclick = () => { toggleSw(i); swToast(i); }; }); addLab(V(cx(7.5), 1.7, 0), '4 y 5: no se usan', '#9aa1ab'); for (let k = 1; k <= 6; k++) addLab(groupCenters[k], `P${k}`, COL.P[k]); return; }
   if (showAll) return;
-  if (cur === 15) { for (let k = 1; k <= 6; k++) addLab(groupCenters[k], `P${k}`, COL.P[k]); return; }
+  if (cur === LIVE) { [0, 1, 2].forEach(i => { const d = addLab(V(cx(4 + i), 1.7, 0), `switch ${i + 1}`, '#ffffff'); d.style.pointerEvents = 'auto'; d.style.cursor = 'pointer'; d.onclick = () => { toggleSw(i); swToast(i); }; }); return; }
+  if (cur === 19) { addLab(V(cx(14), 6.2, 0), 'sáquenlo para grabarlo', '#ff8a65'); return; }
+  if (cur === CUBESTEP) { for (let k = 1; k <= 6; k++) addLab(groupCenters[k], `P${k}`, COL.P[k]); return; }
   const seen = new Set();
   elsOf(cur).forEach(e => e.labels.forEach(l => { const key = (l.at || '') + (l.t || ''); if (seen.has(key)) return; seen.add(key); const p = l.p ? l.p.clone() : hole(l.at).setY(0.6); addLab(p, l.t || hname(l.at), '#ffb547'); }));
 }
@@ -629,14 +739,16 @@ function loop(now) {
   const pulse = 0.5 + 0.5 * Math.sin((now - stepStart) / 260);
   const glowOn = mode === 'M' && !showAll && (now - stepStart) < 7000;
   EL.forEach(e => {
-    const on = glowOn && e.step === cur && !e.isCube;
+    const on = glowOn && e.step === cur && !e.isCube && !e.only;
     e.mats.forEach(m => { if (on) { m.emissive.setRGB(1, 0.78, 0.45); m.emissiveIntensity = 0.04 + 0.14 * pulse; } else { m.emissive.copy(m.userData.e0); m.emissiveIntensity = m.userData.ei0; } });
   });
+  const pic = EL.find(e => e.chip && e.chip.name === 'PIC16F628A' && !e.only);
+  if (pic && pic.obj.visible && !anim.some(a => a.e === pic)) { const ty = mode === 'M' && !showAll && cur === 19 ? 4.5 + 0.25 * Math.sin(now / 500) : 0; pic.obj.position.y += (ty - pic.obj.position.y) * 0.08; }
   levers.forEach((lv, i) => { const z = sim.sw[i] ? -0.32 : 0.32; lv.position.z += (z - lv.position.z) * 0.25; });
-  const demo17 = mode === 'M' && !showAll && cur === 15;
+  const demo17 = mode === 'M' && !showAll && cur === CUBESTEP;
   for (let k = 1; k <= 6; k++) {
     let I = sim.inten[k - 1];
-    if (mode === 'M' && !showAll) I = demo17 ? (Math.floor((now - stepStart) / 700) % 7 === k ? 1 : 0.06) : 0.05;
+    if (mode === 'M' && !showAll && cur !== LIVE) I = demo17 ? (Math.floor((now - stepStart) / 700) % 7 === k ? 1 : 0.06) : 0.05;
     ledMats[k].forEach(m => { m.emissiveIntensity = I * 5; });
   }
   if (mode === 'P') {
