@@ -1,0 +1,10 @@
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+const r = new THREE.WebGLRenderer({ antialias: true }); r.setPixelRatio(Math.min(devicePixelRatio, 2)); r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement);
+const s = new THREE.Scene(); s.background = new THREE.Color('#15181d');
+const cam = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 500); cam.position.set(0, 40, 50);
+const c = new OrbitControls(cam, r.domElement);
+s.add(new THREE.HemisphereLight('#fff', '#334', 2));
+s.add(new THREE.Mesh(new THREE.BoxGeometry(64, 1, 22), new THREE.MeshStandardMaterial({ color: '#efe9dc' })));
+r.setAnimationLoop(() => { c.update(); r.render(s, cam); });
+document.getElementById('estado').textContent = 'OK three ' + THREE.REVISION;
