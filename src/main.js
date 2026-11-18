@@ -101,6 +101,7 @@ for (const [c0, P, name] of [[10, PICP, 'PIC16F628A'], [30, ULNP, 'ULN2803']]) f
   NET[half(p.r) + p.c] = net; NETINFO[`FREE_${name}_${n}`] = `Pata ${n} del ${name} (${P[n][0]}): libre, no se conecta`;
 }
 NET.T4 = 'RA0'; NET.T5 = 'RA1'; NET.T6 = 'RA2'; NET.B4 = NET.B5 = NET.B6 = 'VCC';
+NET.T7 = NET.B7 = 'DIP4'; NET.T8 = NET.B8 = 'DIP5'; NETINFO.DIP4 = 'Switch 4 del DIP: sin cables, el programa no lo usa'; NETINFO.DIP5 = 'Switch 5 del DIP: sin cables, el programa no lo usa';
 for (let k = 1; k <= 6; k++) { NET['T' + (47 - k)] = 'OUT' + k; NET['B' + (47 - k)] = 'P' + k; }
 const holeNet = (r, c) => (r === 'tp' || r === 'bp') ? 'VCC' : (r === 'tn' || r === 'bn') ? 'GND' : NET[half(r) + c] || null;
 
@@ -282,17 +283,17 @@ function chip(c0, name, sub) {
 // ---- DIP switch de 3
 const levers = [];
 function dipSwitch() {
-  const g = new THREE.Group(); const xm = cx(5);
-  const body = new THREE.Mesh(new RoundedBoxGeometry(3.3, 0.7, 2.15, 3, 0.08), plastic('#c62828', 0.45)); body.position.set(xm, 0.62, 0); g.add(body);
-  const top = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 2.05), new THREE.MeshStandardMaterial({ map: canvasTex(320, 205, (c, w, h) => { c.fillStyle = '#c62828'; c.fillRect(0, 0, w, h); c.fillStyle = '#fff'; c.font = 'bold 26px Arial'; c.textAlign = 'left'; c.fillText('ON', 10, 28); c.textAlign = 'center'; c.font = 'bold 24px Arial'; [0, 1, 2].forEach(i => c.fillText(String(i + 1), (i + 0.5) / 3.2 * w + 5, h - 10)); }), roughness: 0.5 }));
+  const g = new THREE.Group(); const xm = cx(6);
+  const body = new THREE.Mesh(new RoundedBoxGeometry(5.3, 0.7, 2.15, 3, 0.08), plastic('#c62828', 0.45)); body.position.set(xm, 0.62, 0); g.add(body);
+  const top = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 2.05), new THREE.MeshStandardMaterial({ map: canvasTex(520, 205, (c, w, h) => { c.fillStyle = '#c62828'; c.fillRect(0, 0, w, h); c.fillStyle = '#fff'; c.font = 'bold 26px Arial'; c.textAlign = 'left'; c.fillText('ON', 10, 28); c.textAlign = 'center'; c.font = 'bold 24px Arial'; [0, 1, 2, 3, 4].forEach(i => { c.fillStyle = i < 3 ? '#fff' : '#f2a8a8'; c.fillText(String(i + 1), (i + 0.5) / 5.2 * w + 5, h - 10); }); }), roughness: 0.5 }));
   top.rotation.x = -Math.PI / 2; top.position.set(xm, 0.975, 0); top.userData.noGlow = true; g.add(top);
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     const x = cx(4 + i);
     const slot = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.06, 1.3), plastic('#f3e5e3')); slot.position.set(x, 0.99, 0); slot.userData.noGlow = true; g.add(slot);
     const lv = new THREE.Mesh(new RoundedBoxGeometry(0.46, 0.34, 0.55, 2, 0.06), plastic('#f7f7f7', 0.35)); lv.position.set(x, 1.15, 0.32); lv.userData.sw = i; lv.userData.noGlow = true; g.add(lv); levers.push(lv);
   }
   const legM = metal(); const vt = new THREE.BoxGeometry(0.2, 0.75, 0.07);
-  for (let i = 0; i < 3; i++) for (const s of [-1, 1]) { const v1 = new THREE.Mesh(vt, legM); v1.position.set(cx(4 + i), 0.12, s * 1.25); g.add(v1); }
+  for (let i = 0; i < 5; i++) for (const s of [-1, 1]) { const v1 = new THREE.Mesh(vt, legM); v1.position.set(cx(4 + i), 0.12, s * 1.25); g.add(v1); }
   return g;
 }
 // ---- fuente
@@ -403,7 +404,7 @@ W(8, 'j37', 'bn37', COL.blk, { h: 1.0 }, 'Pata 8 del ULN (sin usar) → GND', ['
 W(9, 'c18', 'h34', COL.P[5], { h: 6.2 }, '<b>RB4</b>: pata 10 del PIC (fila de arriba) → pata 5 del ULN', ['RB4']);
 W(9, 'd17', 'i35', COL.P[6], { h: 7.2 }, '<b>RB5</b>: pata 11 del PIC (fila de arriba) → pata 6 del ULN', ['RB5']);
 // 10
-addEl(10, dipSwitch(), { tip: '<b>DIP switch de 3</b>, cruzando el canal en las columnas 4, 5 y 6. Toquen una palanca para moverla.', nets: ['RA0', 'RA1', 'RA2', 'VCC'], dip: true, labels: [{ at: 'e4', t: 'switch 1 · col 4' }, { at: 'e6', t: 'switch 3 · col 6' }] });
+addEl(10, dipSwitch(), { tip: '<b>DIP switch de 5</b>, cruzando el canal en las columnas 4 a 8. Solo se usan el 1, 2 y 3; el 4 y el 5 se quedan sin cables. Toquen una palanca para moverla.', nets: ['RA0', 'RA1', 'RA2', 'VCC'], dip: true, labels: [{ at: 'e4', t: 'switch 1 · col 4' }, { at: 'e6', t: 'switch 3 · col 6' }, { at: 'e8', t: '4 y 5: sin cables' }] });
 // 11
 [4, 5, 6].forEach(c => W(11, 'j' + c, 'bp' + c, COL.red, { h: 1.3 }, `Lado de abajo del switch ${c - 3} → riel +`, ['VCC'], undefined));
 // 12
@@ -432,7 +433,7 @@ const STEPS = [
   ['ULN2803', 'Cruzando el canal, con la <b>muesca a la izquierda</b>. Pata 1 en <code>f30</code>, pata 9 en <code>f38</code>, pata 10 en <code>e38</code> y pata 18 en <code>e30</code>.'],
   ['Alimentación del ULN', '<b>Pata 9 (GND)</b>: <code>j38</code> al riel −; sin esto nunca prende nada. <b>Pata 10 (COM)</b>: <code>a38</code> al riel +. Patas 7 y 8 (<code>j36</code>, <code>j37</code>) al riel −.'],
   ['Del PIC al ULN (6 cables)', '<code>g15→g30</code> (RB0), <code>h16→h31</code> (RB1), <code>i17→i32</code> (RB2), <code>j18→j33</code> (RB3).<br>RB4 y RB5 salen de la fila de <b>arriba</b> del PIC: <code>c18→h34</code> y <code>d17→i35</code>.'],
-  ['DIP switch', 'Cruzando el canal en las columnas <b>4, 5 y 6</b>, con el switch 1 a la izquierda y el lado «ON» hacia arriba.'],
+  ['DIP switch de 5', 'Cruzando el canal en las columnas <b>4 a 8</b>, con el switch 1 a la izquierda y el lado «ON» hacia arriba. El programa solo lee los switches <b>1, 2 y 3</b> (columnas 4, 5 y 6). El <b>4 y el 5</b> (columnas 7 y 8) se quedan <b>sin ningún cable</b>; déjenlos en OFF.'],
   ['DIP: lado de abajo al +', 'Tres cables rojos de <code>j4</code>, <code>j5</code> y <code>j6</code> al riel + de abajo.'],
   ['Resistencias de 10 kΩ a GND', 'De <code>a4</code>, <code>a5</code> y <code>a6</code> al riel − de arriba. <b>Muy importantes</b>: sin ellas el PIC lee mal los switches y se queda en «todo encendido».'],
   ['Del DIP al PIC', 'Switch 1: <code>b4→b11</code> (pata 17, RA0). Switch 2: <code>c5→c10</code> (pata 18, RA1). Switch 3: <code>d6→g10</code> (pata 1, RA2, en la fila de abajo).'],
@@ -511,7 +512,7 @@ const labelsEl = $('labels');
 let LABS = [];
 function buildLabels() {
   labelsEl.innerHTML = ''; LABS = [];
-  if (mode === 'P') { [0, 1, 2].forEach(i => { const d = addLab(V(cx(4 + i), 1.7, 0), `switch ${i + 1}`, '#ffffff'); d.style.pointerEvents = 'auto'; d.style.cursor = 'pointer'; d.onclick = () => { toggleSw(i); toast(`<b>Switch ${i + 1}</b>: ${sim.sw[i] ? 'ON' : 'OFF'} → ${MODES[leer()]}`); }; }); for (let k = 1; k <= 6; k++) addLab(groupCenters[k], `P${k}`, COL.P[k]); return; }
+  if (mode === 'P') { [0, 1, 2].forEach(i => { const d = addLab(V(cx(4 + i), 1.7, 0), `switch ${i + 1}`, '#ffffff'); d.style.pointerEvents = 'auto'; d.style.cursor = 'pointer'; d.onclick = () => { toggleSw(i); swToast(i); }; }); addLab(V(cx(7.5), 1.7, 0), '4 y 5: no se usan', '#9aa1ab'); for (let k = 1; k <= 6; k++) addLab(groupCenters[k], `P${k}`, COL.P[k]); return; }
   if (showAll) return;
   if (cur === 17) { for (let k = 1; k <= 6; k++) addLab(groupCenters[k], `P${k}`, COL.P[k]); return; }
   const seen = new Set();
@@ -549,7 +550,7 @@ renderer.domElement.addEventListener('pointerup', e => {
   const hit = ray.intersectObjects(objs, true).find(h => h.object.visible !== false && !(h.object.material && h.object.material.opacity < 0.2));
   if (!hit) { toast(''); return; }
   const o = hit.object;
-  if (o.userData.sw !== undefined) { toggleSw(o.userData.sw); toast(`<b>Switch ${o.userData.sw + 1}</b>: ${sim.sw[o.userData.sw] ? 'ON' : 'OFF'} → ${MODES[leer()]}`); return; }
+  if (o.userData.sw !== undefined) { toggleSw(o.userData.sw); swToast(o.userData.sw); return; }
   if (o.userData.led) { const L = o.userData.led; toast(`<b>${L.d}</b> · grupo P${L.p}<br>Pata larga al + común; pata corta al cable P${L.p}.`); return; }
   if (o.userData.board) {
     const p = hit.point; const c = Math.round(p.x + 30.5); let best = null, bd = 9;
@@ -559,7 +560,7 @@ renderer.domElement.addEventListener('pointerup', e => {
     toast(`<b>${name}</b><br>${n ? (NETINFO[n] || n) : 'Libre: aquí no va nada.'}`); return;
   }
   const el = EL[o.userData.el]; if (!el) return;
-  if (el.dip) { const i = Math.max(0, Math.min(2, Math.round(hit.point.x - cx(4)))); toggleSw(i); toast(`<b>Switch ${i + 1}</b>: ${sim.sw[i] ? 'ON' : 'OFF'} → ${MODES[leer()]}`); return; }
+  if (el.dip) { const i = Math.max(0, Math.min(4, Math.round(hit.point.x - cx(4)))); toggleSw(i); swToast(i); return; }
   if (el.chip) {
     let best = 1, bd = 1e9; const hp = hit.point.clone().setY(0);
     for (let n = 1; n <= 18; n++) { const pp = pinPos(el.chip.c0, n); const dd = V(cx(pp.c), 0, ROWZ[pp.r]).distanceToSquared(hp); if (dd < bd) { bd = dd; best = n; } }
@@ -572,7 +573,7 @@ let toastT = 0;
 function toast(html) { const t = $('toast'); if (!html) { t.style.display = 'none'; return; } t.innerHTML = html; t.style.display = 'block'; clearTimeout(toastT); toastT = setTimeout(() => { t.style.display = 'none'; }, 5200); $('hint').style.opacity = 0; }
 
 // ============================================================ simulación de CUBO.c
-const sim = { sw: [false, false, false], portb: 0, reset: 0, resets: 0, boren: true, vn: 4.5, drop: 0.3, bor: 4.0, v: 4.5, inten: [0, 0, 0, 0, 0, 0] };
+const sim = { sw: [false, false, false, false, false], portb: 0, reset: 0, resets: 0, boren: true, vn: 4.5, drop: 0.3, bor: 4.0, v: 4.5, inten: [0, 0, 0, 0, 0, 0] };
 let modo = 0;
 const leer = () => (sim.sw[0] ? 1 : 0) | (sim.sw[1] ? 2 : 0) | (sim.sw[2] ? 4 : 0);
 function* esperar(ms) { while (ms >= 10) { yield; if (leer() !== modo) return 1; ms -= 10; } return 0; }
@@ -600,9 +601,10 @@ function tick() {
 }
 const MODES = ['todo encendido fijo', 'parpadea ABAJO (P3, P4)', 'parpadean los LATERALES (P5, P6)', 'parpadean ABAJO y LATERALES', 'parpadea ARRIBA (P1, P2)', 'parpadean ARRIBA y ABAJO', 'parpadean ARRIBA y LATERALES', 'recorrido: un grupo cada vez'];
 function toggleSw(i) { sim.sw[i] = !sim.sw[i]; updSw(); }
+function swToast(i) { toast(i < 3 ? `<b>Switch ${i + 1}</b>: ${sim.sw[i] ? 'ON' : 'OFF'} → ${MODES[leer()]}` : `<b>Switch ${i + 1}</b>: no tiene cables y el programa no lo lee. Déjenlo en OFF.`); }
 function updSw() {
   for (let i = 0; i < 3; i++) { const b = $('sw' + i); b.textContent = `${i + 1} · ${sim.sw[i] ? 'ON' : 'OFF'}`; b.classList.toggle('on', sim.sw[i]); }
-  $('modo').innerHTML = `Switches ${sim.sw.map(s => s ? 'ON' : 'off').join(' · ')} → <b>${MODES[leer()]}</b>`;
+  $('modo').innerHTML = `Switches ${sim.sw.slice(0, 3).map(s => s ? 'ON' : 'off').join(' · ')} → <b>${MODES[leer()]}</b>`;
 }
 for (let i = 0; i < 3; i++) $('sw' + i).onclick = () => toggleSw(i);
 function updCtl() { sim.vn = +$('vn').value; sim.drop = +$('drop').value; sim.boren = $('boren').checked; sim.bor = +$('bor').value; $('dropv').textContent = `${sim.drop.toFixed(2).replace('.', ',')} V → quedan ${(sim.vn - sim.drop).toFixed(2).replace('.', ',')} V`; }
