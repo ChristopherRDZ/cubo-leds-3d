@@ -80,7 +80,7 @@ const NET = {};
 const NETINFO = {
   VCC: '+4,5 V (rieles rojos)', GND: 'GND, el − (rieles azules)',
   OSC1: 'Cristal ↔ pata 16 del PIC (OSC1) ↔ condensador 22 pF', OSC2: 'Cristal ↔ pata 15 del PIC (OSC2) ↔ condensador 22 pF',
-  MCLR: 'Pata 4 del PIC (MCLR) → 10 kΩ → +',
+  MCLR: 'Pata 4 del PIC (MCLR) → cable directo al + (como en su esquema)',
   RA0: 'Switch 1 → pata 17 del PIC (RA0), con 10 kΩ a GND',
   RA1: 'Switch 2 → pata 18 del PIC (RA1), con 10 kΩ a GND',
   RA2: 'Switch 3 → pata 1 del PIC (RA2), con 10 kΩ a GND'
@@ -92,7 +92,7 @@ for (let k = 1; k <= 6; k++) {
 }
 const PICP = { 1: ['RA2', 'RA2'], 2: ['RA3', 'FREE'], 3: ['RA4', 'FREE'], 4: ['RA5/MCLR', 'MCLR'], 5: ['VSS (−)', 'GND'], 6: ['RB0', 'RB0'], 7: ['RB1', 'RB1'], 8: ['RB2', 'RB2'], 9: ['RB3', 'RB3'], 10: ['RB4', 'RB4'], 11: ['RB5', 'RB5'], 12: ['RB6', 'FREE'], 13: ['RB7', 'FREE'], 14: ['VDD (+)', 'VCC'], 15: ['OSC2', 'OSC2'], 16: ['OSC1', 'OSC1'], 17: ['RA0', 'RA0'], 18: ['RA1', 'RA1'] };
 const ULNP = {};
-for (let n = 1; n <= 8; n++) ULNP[n] = [n + 'B', n <= 6 ? 'RB' + (n - 1) : 'GND'];
+for (let n = 1; n <= 8; n++) ULNP[n] = [n + 'B', n <= 6 ? 'RB' + (n - 1) : 'FREE'];
 ULNP[9] = ['GND', 'GND']; ULNP[10] = ['COM', 'VCC'];
 for (let n = 11; n <= 18; n++) { const k = 19 - n; ULNP[n] = [k + 'C', k <= 6 ? 'OUT' + k : 'FREE']; }
 const pinPos = (c0, n) => n <= 9 ? { r: 'f', c: c0 + n - 1 } : { r: 'e', c: c0 + (18 - n) };
@@ -379,15 +379,13 @@ W(1, 'tn59', 'bn59', COL.blk, { pts: [V(32.0, 0.8, -7.5), V(32.3, 0.8, 0), V(32.
 for (const [a, b, c, n] of [['tp28', 'tp35', COL.red, 'VCC'], ['tn28', 'tn35', COL.blk, 'GND'], ['bn28', 'bn35', COL.blk, 'GND'], ['bp28', 'bp35', COL.red, 'VCC']])
   W(1, a, b, c, { ghost: true, h: 1.6 }, '<b>Solo si los rieles están cortados a la mitad</b> (la línea roja/azul se interrumpe): este puente une las dos mitades.', [n], []);
 // 2
-addEl(2, electro('tp52', 'tn53'), { tip: '<b>Condensador 100 µF</b><br>Pata larga (+) al riel rojo; la franja (−) al azul.', nets: ['VCC', 'GND'], labels: [{ at: 'tp52', t: '+ pata larga' }, { at: 'tn53', t: '− franja' }] });
 // 3
 addEl(3, chip(10, 'PIC16F628A', 'muesca a la izquierda'), { tip: '<b>PIC16F628A</b><br>Muesca a la IZQUIERDA. Pata 1 en f10.', nets: Object.values(PICP).map(p => p[1]), labels: [{ at: 'f10', t: 'pata 1 · f10' }, { at: 'e10', t: 'pata 18 · e10' }, { at: 'f18', t: 'pata 9 · f18' }, { at: 'e18', t: 'pata 10 · e18' }], chip: { c0: 10, P: PICP, name: 'PIC16F628A' } });
 // 4
 W(4, 'a14', 'tp14', COL.red, { h: 1.5 }, 'Pata 14 (VDD) → riel + de arriba', ['VCC'], ['a14 (pata 14) → riel +']);
 W(4, 'j14', 'bn14', COL.blk, { h: 1.0 }, 'Pata 5 (VSS) → riel − de abajo', ['GND'], ['j14 (pata 5) → riel −']);
-addEl(4, ceramic('tp16', 'tn17'), { tip: '<b>Condensador 100 nF</b> (código 104) entre + y −, junto al PIC. Sin polaridad.', nets: ['VCC', 'GND'], labels: [{ at: 'tp16', t: '100 nF (104)' }] });
 // 5
-addEl(5, resistor('j13', 'bp13', '10k', { elev: 1.25 }), { tip: '<b>Resistencia 10 kΩ</b> (café-negro-naranja)<br>Pata 4 (MCLR) → +.', nets: ['MCLR', 'VCC'], labels: [{ at: 'j13', t: 'j13 · pata 4' }, { at: 'bp13', t: 'riel +' }] });
+W(4, 'j13', 'bp13', COL.red, { h: 1.4 }, 'Pata 4 (MCLR) → riel + de abajo, directo, como en su esquema', ['MCLR', 'VCC'], ['j13 (pata 4) → riel +']);
 // 6
 addEl(6, crystal('c12', 'c13'), { tip: '<b>Cristal de 4 MHz</b> en las patas 16 y 15. Sin polaridad.', nets: ['OSC1', 'OSC2'], labels: [{ at: 'c12', t: 'c12' }, { at: 'c13', t: 'c13' }] });
 addEl(6, ceramic('a12', 'tn12'), { tip: '<b>22 pF</b>: pata 16 → GND', nets: ['OSC1', 'GND'], labels: [{ at: 'a12', t: '22 pF · a12' }] });
@@ -397,8 +395,6 @@ addEl(7, chip(30, 'ULN2803', 'muesca a la izquierda'), { tip: '<b>ULN2803</b><br
 // 8
 W(8, 'j38', 'bn38', COL.blk, { h: 1.0 }, 'Pata 9 del ULN (GND) → riel −. Imprescindible.', ['GND'], ['j38 (pata 9) → riel −']);
 W(8, 'a38', 'tp38', COL.red, { h: 1.5 }, 'Pata 10 del ULN (COM) → riel +', ['VCC'], ['a38 (pata 10) → riel +']);
-W(8, 'j36', 'bn36', COL.blk, { h: 1.0 }, 'Pata 7 del ULN (sin usar) → GND', ['GND'], ['j36 → riel −']);
-W(8, 'j37', 'bn37', COL.blk, { h: 1.0 }, 'Pata 8 del ULN (sin usar) → GND', ['GND'], ['j37 → riel −']);
 // 9
 [['g15', 'g30'], ['h16', 'h31'], ['i17', 'i32'], ['j18', 'j33']].forEach(([a, b], i) => W(9, a, b, COL.P[i + 1], { h: 3.6 }, `<b>RB${i}</b>: pata ${6 + i} del PIC → pata ${i + 1} del ULN`, ['RB' + i]));
 W(9, 'c18', 'h34', COL.P[5], { h: 6.2 }, '<b>RB4</b>: pata 10 del PIC (fila de arriba) → pata 5 del ULN', ['RB4']);
@@ -422,16 +418,15 @@ addEl(16, ledCube(), { tip: '<b>El cubo</b>: ARRIBA (P1, P2), ABAJO (P3, P4) y L
 for (let k = 1; k <= 6; k++) { const c = 47 - k, x = cx(c); W(16, 'j' + c, cubeEntry(k), COL.P[k], { pts: [V(x, 1.5, 7.2), V(x + 0.2, 0.9, 10.6), V(cubeEntry(k).x, 0.2, 13.5)] }, `Cable <b>P${k}</b> → patas cortas del grupo P${k}`, ['P' + k], [`j${c} → P${k}`]); }
 W(16, 'bp50', cubeEntry(0), COL.red, { pts: [V(cx(50), 1.3, 9.6), V(cx(50) - 0.5, 0.6, 12.2), V(cubeEntry(0).x, 0.2, 13.8)] }, '<b>+ común</b> → patas largas de TODOS los LEDs', ['VCC'], ['bp50 → + común']);
 
+for (const e of EL) { if (e.step > 4) e.step -= 2; else if (e.step > 2) e.step -= 1; }
 // ============================================================ pasos
 const STEPS = [
   ['Fuente y rieles', 'Cable <b>rojo</b> del + de la fuente al riel rojo de arriba y cable <b>negro</b> del − al riel azul de arriba. En el extremo derecho, unan los rieles de arriba con los de abajo: rojo con rojo, azul con azul.<br><br>Los cables <b>transparentes</b> solo hacen falta si la línea roja o azul de su protoboard se corta a la mitad (rieles partidos).'],
-  ['Condensador de 100 µF', 'En los rieles de arriba, columnas 52–53: <b>pata larga al riel rojo</b> y pata corta (la de la franja) al azul.'],
   ['PIC16F628A', 'Cruzando el canal central, con la <b>muesca a la izquierda</b>. Pata 1 en <code>f10</code>, pata 9 en <code>f18</code>, pata 10 en <code>e18</code> y pata 18 en <code>e10</code>.'],
-  ['Alimentación del PIC', 'Cable rojo de <code>a14</code> (pata 14) al riel + de arriba. Cable negro de <code>j14</code> (pata 5) al riel − de abajo. Condensador <b>100 nF (104)</b> entre los rieles + y − de arriba, junto al PIC.'],
-  ['MCLR (pata 4)', 'Resistencia de <b>10 kΩ</b> (café-negro-naranja) de <code>j13</code> al riel + de abajo. Si la pata 4 queda al aire, el PIC se reinicia solo.'],
+  ['Alimentación del PIC y MCLR', 'Cable rojo de <code>a14</code> (pata 14) al riel + de arriba. Cable negro de <code>j14</code> (pata 5) al riel − de abajo. Y la <b>pata 4 (MCLR)</b> directo al +: cable rojo de <code>j13</code> al riel + de abajo, como en su esquema. Si la pata 4 queda al aire, el PIC se reinicia solo.'],
   ['Cristal de 4 MHz', 'Cristal en <code>c12</code> y <code>c13</code> (patas 16 y 15). Un condensador de <b>22 pF</b> de <code>a12</code> al riel − y otro de <code>a13</code> al riel −. Sin cristal el PIC no arranca.'],
   ['ULN2803', 'Cruzando el canal, con la <b>muesca a la izquierda</b>. Pata 1 en <code>f30</code>, pata 9 en <code>f38</code>, pata 10 en <code>e38</code> y pata 18 en <code>e30</code>.'],
-  ['Alimentación del ULN', '<b>Pata 9 (GND)</b>: <code>j38</code> al riel −; sin esto nunca prende nada. <b>Pata 10 (COM)</b>: <code>a38</code> al riel +. Patas 7 y 8 (<code>j36</code>, <code>j37</code>) al riel −.'],
+  ['Alimentación del ULN', '<b>Pata 9 (GND)</b>: <code>j38</code> al riel −; sin esto nunca prende nada. <b>Pata 10 (COM)</b>: <code>a38</code> al riel +. Las patas 7 y 8 no se usan y quedan libres.'],
   ['Del PIC al ULN (6 cables)', '<code>g15→g30</code> (RB0), <code>h16→h31</code> (RB1), <code>i17→i32</code> (RB2), <code>j18→j33</code> (RB3).<br>RB4 y RB5 salen de la fila de <b>arriba</b> del PIC: <code>c18→h34</code> y <code>d17→i35</code>.'],
   ['DIP switch de 5', 'Cruzando el canal en las columnas <b>4 a 8</b>, con el switch 1 a la izquierda y el lado «ON» hacia arriba. El programa solo lee los switches <b>1, 2 y 3</b> (columnas 4, 5 y 6). El <b>4 y el 5</b> (columnas 7 y 8) se quedan <b>sin ningún cable</b>; déjenlos en OFF.'],
   ['DIP: lado de abajo al +', 'Tres cables rojos de <code>j4</code>, <code>j5</code> y <code>j6</code> al riel + de abajo.'],
@@ -444,8 +439,8 @@ const STEPS = [
   ['El programa', 'En <b>CUBO.c</b> cambien<br><code>#pragma config BOREN = ON</code><br>por<br><code>#pragma config BOREN = OFF</code><br>Compilen y graben otra vez el PIC. Con 4,5 V, la protección de bajo voltaje puede reiniciar el PIC cada vez que se prenden todos los LEDs, y entonces nunca llega a la secuencia.<br><br>Listo: pasen a <b>Probar</b> para ver qué debe hacer cada posición del DIP.']
 ];
 const FOCUS = {
-  17: () => new THREE.Box3().setFromCenterAndSize(V(CUBE.x, CUBE.y0 + 3.5, CUBE.z), V(12, 10, 12)),
-  18: () => new THREE.Box3().setFromCenterAndSize(V(cx(14), 0.5, -1), V(14, 2, 12))
+  15: () => new THREE.Box3().setFromCenterAndSize(V(CUBE.x, CUBE.y0 + 3.5, CUBE.z), V(12, 10, 12)),
+  16: () => new THREE.Box3().setFromCenterAndSize(V(cx(14), 0.5, -1), V(14, 2, 12))
 };
 
 // ============================================================ estado de la vista
@@ -514,7 +509,7 @@ function buildLabels() {
   labelsEl.innerHTML = ''; LABS = [];
   if (mode === 'P') { [0, 1, 2].forEach(i => { const d = addLab(V(cx(4 + i), 1.7, 0), `switch ${i + 1}`, '#ffffff'); d.style.pointerEvents = 'auto'; d.style.cursor = 'pointer'; d.onclick = () => { toggleSw(i); swToast(i); }; }); addLab(V(cx(7.5), 1.7, 0), '4 y 5: no se usan', '#9aa1ab'); for (let k = 1; k <= 6; k++) addLab(groupCenters[k], `P${k}`, COL.P[k]); return; }
   if (showAll) return;
-  if (cur === 17) { for (let k = 1; k <= 6; k++) addLab(groupCenters[k], `P${k}`, COL.P[k]); return; }
+  if (cur === 15) { for (let k = 1; k <= 6; k++) addLab(groupCenters[k], `P${k}`, COL.P[k]); return; }
   const seen = new Set();
   elsOf(cur).forEach(e => e.labels.forEach(l => { const key = (l.at || '') + (l.t || ''); if (seen.has(key)) return; seen.add(key); const p = l.p ? l.p.clone() : hole(l.at).setY(0.6); addLab(p, l.t || hname(l.at), '#ffb547'); }));
 }
@@ -638,7 +633,7 @@ function loop(now) {
     e.mats.forEach(m => { if (on) { m.emissive.setRGB(1, 0.78, 0.45); m.emissiveIntensity = 0.04 + 0.14 * pulse; } else { m.emissive.copy(m.userData.e0); m.emissiveIntensity = m.userData.ei0; } });
   });
   levers.forEach((lv, i) => { const z = sim.sw[i] ? -0.32 : 0.32; lv.position.z += (z - lv.position.z) * 0.25; });
-  const demo17 = mode === 'M' && !showAll && cur === 17;
+  const demo17 = mode === 'M' && !showAll && cur === 15;
   for (let k = 1; k <= 6; k++) {
     let I = sim.inten[k - 1];
     if (mode === 'M' && !showAll) I = demo17 ? (Math.floor((now - stepStart) / 700) % 7 === k ? 1 : 0.06) : 0.05;
