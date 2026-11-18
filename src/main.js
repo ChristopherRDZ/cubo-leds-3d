@@ -403,7 +403,7 @@ W(8, 'j37', 'bn37', COL.blk, { h: 1.0 }, 'Pata 8 del ULN (sin usar) → GND', ['
 W(9, 'c18', 'h34', COL.P[5], { h: 6.2 }, '<b>RB4</b>: pata 10 del PIC (fila de arriba) → pata 5 del ULN', ['RB4']);
 W(9, 'd17', 'i35', COL.P[6], { h: 7.2 }, '<b>RB5</b>: pata 11 del PIC (fila de arriba) → pata 6 del ULN', ['RB5']);
 // 10
-addEl(10, dipSwitch(), { tip: '<b>DIP switch de 3</b>, cruzando el canal en las columnas 4, 5 y 6. Toquen una palanca para moverla.', nets: ['RA0', 'RA1', 'RA2', 'VCC'], labels: [{ at: 'e4', t: 'switch 1 · col 4' }, { at: 'e6', t: 'switch 3 · col 6' }] });
+addEl(10, dipSwitch(), { tip: '<b>DIP switch de 3</b>, cruzando el canal en las columnas 4, 5 y 6. Toquen una palanca para moverla.', nets: ['RA0', 'RA1', 'RA2', 'VCC'], dip: true, labels: [{ at: 'e4', t: 'switch 1 · col 4' }, { at: 'e6', t: 'switch 3 · col 6' }] });
 // 11
 [4, 5, 6].forEach(c => W(11, 'j' + c, 'bp' + c, COL.red, { h: 1.3 }, `Lado de abajo del switch ${c - 3} → riel +`, ['VCC'], undefined));
 // 12
@@ -511,13 +511,13 @@ const labelsEl = $('labels');
 let LABS = [];
 function buildLabels() {
   labelsEl.innerHTML = ''; LABS = [];
-  if (mode === 'P') { [0, 1, 2].forEach(i => addLab(V(cx(4 + i), 1.7, 0), `switch ${i + 1}`, '#ffffff')); for (let k = 1; k <= 6; k++) addLab(groupCenters[k], `P${k}`, COL.P[k]); return; }
+  if (mode === 'P') { [0, 1, 2].forEach(i => { const d = addLab(V(cx(4 + i), 1.7, 0), `switch ${i + 1}`, '#ffffff'); d.style.pointerEvents = 'auto'; d.style.cursor = 'pointer'; d.onclick = () => { toggleSw(i); toast(`<b>Switch ${i + 1}</b>: ${sim.sw[i] ? 'ON' : 'OFF'} → ${MODES[leer()]}`); }; }); for (let k = 1; k <= 6; k++) addLab(groupCenters[k], `P${k}`, COL.P[k]); return; }
   if (showAll) return;
   if (cur === 17) { for (let k = 1; k <= 6; k++) addLab(groupCenters[k], `P${k}`, COL.P[k]); return; }
   const seen = new Set();
   elsOf(cur).forEach(e => e.labels.forEach(l => { const key = (l.at || '') + (l.t || ''); if (seen.has(key)) return; seen.add(key); const p = l.p ? l.p.clone() : hole(l.at).setY(0.6); addLab(p, l.t || hname(l.at), '#ffb547'); }));
 }
-function addLab(p, text, color) { const d = document.createElement('div'); d.className = 'lab'; d.style.setProperty('--c', color); d.textContent = text; labelsEl.appendChild(d); LABS.push({ p, d }); }
+function addLab(p, text, color) { const d = document.createElement('div'); d.className = 'lab'; d.style.setProperty('--c', color); d.textContent = text; labelsEl.appendChild(d); LABS.push({ p, d }); return d; }
 const tmpV = new THREE.Vector3();
 function placeLabels() {
   const w = view.clientWidth, h = view.clientHeight; const placed = [];
@@ -559,6 +559,7 @@ renderer.domElement.addEventListener('pointerup', e => {
     toast(`<b>${name}</b><br>${n ? (NETINFO[n] || n) : 'Libre: aquí no va nada.'}`); return;
   }
   const el = EL[o.userData.el]; if (!el) return;
+  if (el.dip) { const i = Math.max(0, Math.min(2, Math.round(hit.point.x - cx(4)))); toggleSw(i); toast(`<b>Switch ${i + 1}</b>: ${sim.sw[i] ? 'ON' : 'OFF'} → ${MODES[leer()]}`); return; }
   if (el.chip) {
     let best = 1, bd = 1e9; const hp = hit.point.clone().setY(0);
     for (let n = 1; n <= 18; n++) { const pp = pinPos(el.chip.c0, n); const dd = V(cx(pp.c), 0, ROWZ[pp.r]).distanceToSquared(hp); if (dd < bd) { bd = dd; best = n; } }
@@ -660,4 +661,4 @@ frame(overview(), true);
 requestAnimationFrame(loop);
 setTimeout(() => { $('loading').style.opacity = 0; setTimeout(() => $('loading').remove(), 600); }, 400);
 setTimeout(() => { $('hint').style.opacity = 0; }, 9000);
-window.__app = { EL, goto, frame, overview, get cur() { return cur; }, toggleSw, sim };
+window.__app = { EL, goto, frame, overview, get cur() { return cur; }, toggleSw, sim, screen: (x, y, z) => { const r = renderer.domElement.getBoundingClientRect(); const v = V(x, y, z).project(camera); return { x: r.left + (v.x * 0.5 + 0.5) * r.width, y: r.top + (-v.y * 0.5 + 0.5) * r.height }; }, hole: s => { const h = hole(s); return [h.x, h.y, h.z]; } };
